@@ -1,12 +1,12 @@
 let attempts = 0;
 const maxAttempts = 3;
 
-// Generate quiz
+// Generate math quiz
 const a = Math.floor(Math.random() * 10) + 1;
 const b = Math.floor(Math.random() * 10) + 1;
 const correctAnswer = a + b;
 
-// Render question on canvas
+// Draw quiz on canvas
 function drawQuizCanvas() {
   const canvas = document.getElementById("quizCanvas");
   const ctx = canvas.getContext("2d");
@@ -23,7 +23,7 @@ function drawQuizCanvas() {
     ctx.fill();
   }
 
-  // Draw the question
+  // Render question
   ctx.font = "bold 36px Arial";
   ctx.fillStyle = "black";
   const question = `${a} + ${b}`;
@@ -48,6 +48,12 @@ async function deleteToken(token) {
 function checkAnswer() {
   const userAnswer = parseInt(document.getElementById("answer").value);
   const messageEl = document.getElementById("message");
+  const token = getTokenFromURL();
+
+  if (!token) {
+    messageEl.innerText = "Missing token.";
+    return;
+  }
 
   if (isNaN(userAnswer)) {
     messageEl.innerText = "Please enter a valid number.";
@@ -57,15 +63,9 @@ function checkAnswer() {
   attempts++;
 
   if (userAnswer === correctAnswer) {
-    const token = getTokenFromURL();
-    if (!token) {
-      messageEl.innerText = "Missing token.";
-      return;
-    }
-
     fetch(`/api/get-url?token=${token}`)
       .then(res => {
-        if (res.status === 404) throw new Error("Token expired or invalid.");
+        if (!res.ok) throw new Error("Token expired or invalid.");
         return res.json();
       })
       .then(data => {
@@ -86,12 +86,11 @@ function checkAnswer() {
 
   } else {
     if (attempts >= maxAttempts) {
-      const token = getTokenFromURL();
       deleteToken(token);
-      messageEl.innerText = "Maximum attempts exceeded. Link is now invalid.";
+      messageEl.innerText = "❌ Maximum attempts exceeded. Link is now invalid.";
       document.getElementById("answer").disabled = true;
     } else {
-      messageEl.innerText = `Incorrect. You have ${maxAttempts - attempts} attempt(s) left.`;
+      messageEl.innerText = `❗ Incorrect. You have ${maxAttempts - attempts} attempt(s) left.`;
     }
   }
 }
