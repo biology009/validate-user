@@ -7,7 +7,7 @@
     },
     {
       "source": "/api/(.*)",
-      "destination": "/api/$1"  // Explicit API route handling
+      "destination": "/api/$1"
     }
   ],
   "headers": [
