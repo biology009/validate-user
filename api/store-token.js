@@ -17,11 +17,11 @@ export default async function handler(req, res) {
   try {
     // Store in Upstash Redis with 12-hour expiry
     const response = await fetch(
-      `${process.env.UPSTASH_REDIS_REST_URL}/set/${token}/${encodeURIComponent(url)}/ex/${ttl}`,
+      `${process.env.UPSTASH_REDIS_URL}/set/${token}/${encodeURIComponent(url)}/ex/${ttl}`,
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`,
+          Authorization: `Bearer ${process.env.UPSTASH_REDIS_TOKEN}`,
           'Content-Type': 'application/json'
         }
       }
