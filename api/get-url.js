@@ -1,31 +1,34 @@
 export default async function handler(req, res) {
   const { token } = req.query;
-  if (!token) return res.status(400).json({ error: "Missing token" });
+
+  // 1. Validate input
+  if (!token) {
+    return res.status(400).json({ error: "Missing token" });
+  }
 
   try {
-    // Retrieve stored URL from Redis
+    // 2. Query Upstash Redis with the token
     const response = await fetch(`${process.env.UPSTASH_REDIS_URL}/get/${token}`, {
       headers: {
         Authorization: `Bearer ${process.env.UPSTASH_REDIS_TOKEN}`
       }
     });
 
+    // 3. If Upstash returns error
+    if (!response.ok) throw new Error("Token lookup failed");
+
+    // 4. Get URL from response
     const url = await response.text();
 
-    // If token expired or invalid
-    if (!url || url === "null")
-      return res.status(404).json({ error: "Invalid or expired token" });
+    // 5. If nothing was stored or expired
+    if (!url || url === "null") {
+      return res.status(404).json({ error: "Token expired or invalid" });
+    }
 
-    // One-time use: delete token immediately
-    await fetch(`${process.env.UPSTASH_REDIS_URL}/del/${token}`, {
-      headers: {
-        Authorization: `Bearer ${process.env.UPSTASH_REDIS_TOKEN}`
-      }
-    });
-
+    // 6. Success: Send it back to the frontend
     return res.status(200).json({ url: decodeURIComponent(url) });
 
   } catch (err) {
-    return res.status(500).json({ error: "Server error: " + err.message });
+    return res.status(500).json({ error: err.message });
   }
 }
