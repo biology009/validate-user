@@ -1,12 +1,10 @@
 let attempts = 0;
 const maxAttempts = 3;
 
-// Generate math quiz
 const a = Math.floor(Math.random() * 10) + 1;
 const b = Math.floor(Math.random() * 10) + 1;
 const correctAnswer = a + b;
 
-// Draw quiz on canvas
 function drawQuizCanvas() {
   const canvas = document.getElementById("quizCanvas");
   const ctx = canvas.getContext("2d");
@@ -15,7 +13,6 @@ function drawQuizCanvas() {
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Add noise
   for (let i = 0; i < 80; i++) {
     ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.2})`;
     ctx.beginPath();
@@ -23,11 +20,9 @@ function drawQuizCanvas() {
     ctx.fill();
   }
 
-  // Render question
   ctx.font = "bold 36px Arial";
   ctx.fillStyle = "black";
-  const question = `${a} + ${b}`;
-  ctx.fillText(question, 90, 55);
+  ctx.fillText(`${a} + ${b}`, 90, 55);
 }
 
 drawQuizCanvas();
@@ -71,7 +66,6 @@ function checkAnswer() {
       .then(data => {
         const delay = Math.floor(Math.random() * 5) + 5;
 
-        // Show animation
         document.getElementById("quiz-box").style.display = "none";
         document.getElementById("redirecting").style.display = "flex";
 
