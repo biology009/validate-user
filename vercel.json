@@ -1,8 +1,54 @@
 {
+  "version": 2,
   "rewrites": [
     {
       "source": "/",
       "destination": "/index.html"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"  // Explicit API route handling
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/store-token",
+      "methods": ["POST"],
+      "dest": "/api/store-token.js",
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "src": "/api/get-url",
+      "methods": ["GET"],
+      "dest": "/api/get-url.js"
+    },
+    {
+      "src": "/api/delete-token",
+      "methods": ["GET"],
+      "dest": "/api/delete-token.js"
+    },
+    {
+      "src": "/\\.(png|jpg|css|js)$",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
     }
   ]
 }
