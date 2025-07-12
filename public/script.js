@@ -1,90 +1,92 @@
 let attempts = 0;
 const maxAttempts = 3;
+let correctAnswer = generateMathProblem();
 
-const a = Math.floor(Math.random() * 10) + 1;
-const b = Math.floor(Math.random() * 10) + 1;
-const correctAnswer = a + b;
+// Generate new math problem and draw canvas
+function generateMathProblem() {
+  const a = Math.floor(Math.random() * 10) + 1;
+  const b = Math.floor(Math.random() * 10) + 1;
+  drawQuizCanvas(a, b);
+  return a + b;
+}
 
-function drawQuizCanvas() {
+function drawQuizCanvas(a, b) {
   const canvas = document.getElementById("quizCanvas");
   const ctx = canvas.getContext("2d");
 
-  const bgColor = `hsl(${Math.floor(Math.random() * 360)}, 60%, 85%)`;
-  ctx.fillStyle = bgColor;
+  // Dynamic background
+  ctx.fillStyle = `hsl(${Math.random() * 360}, 70%, 90%)`;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  for (let i = 0; i < 80; i++) {
-    ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.2})`;
-    ctx.beginPath();
-    ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 1.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
+  // Draw problem
   ctx.font = "bold 36px Arial";
-  ctx.fillStyle = "black";
-  ctx.fillText(`${a} + ${b}`, 90, 55);
+  ctx.fillStyle = "#333";
+  ctx.textAlign = "center";
+  ctx.fillText(`${a} + ${b} = ?`, canvas.width/2, 50);
 }
 
-drawQuizCanvas();
-
-function getTokenFromURL() {
+async function getTokenFromURL() {
   const params = new URLSearchParams(window.location.search);
   return params.get("token");
 }
 
-async function deleteToken(token) {
+async function validateToken(token) {
   try {
-    await fetch(`/api/delete-token?token=${token}`);
+    const response = await fetch(`/api/get-url?token=${token}`);
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+    return await response.json();
   } catch (err) {
-    console.error("Token deletion failed:", err);
+    console.error("Token validation failed:", err);
+    return null;
   }
 }
 
-function checkAnswer() {
+async function checkAnswer() {
   const userAnswer = parseInt(document.getElementById("answer").value);
   const messageEl = document.getElementById("message");
-  const token = getTokenFromURL();
+  const token = await getTokenFromURL();
 
   if (!token) {
-    messageEl.innerText = "Missing token.";
+    messageEl.textContent = "❌ Missing verification token";
     return;
   }
 
   if (isNaN(userAnswer)) {
-    messageEl.innerText = "Please enter a valid number.";
+    messageEl.textContent = "❗ Please enter a valid number";
     return;
   }
 
   attempts++;
 
   if (userAnswer === correctAnswer) {
-    fetch(`/api/get-url?token=${token}`)
-      .then(res => {
-        if (!res.ok) throw new Error("Token expired or invalid.");
-        return res.json();
-      })
-      .then(data => {
-        const delay = Math.floor(Math.random() * 5) + 5;
+    const data = await validateToken(token);
+    if (!data?.url) {
+      messageEl.textContent = "❌ Token expired or invalid";
+      return;
+    }
 
-        document.getElementById("quiz-box").style.display = "none";
-        document.getElementById("redirecting").style.display = "flex";
+    // Success - show redirect animation
+    document.getElementById("quiz-box").style.display = "none";
+    document.getElementById("redirecting").style.display = "flex";
 
-        setTimeout(() => {
-          window.location.href = data.url;
-        }, delay * 1000);
-      })
-      .catch(err => {
-        messageEl.style.color = "red";
-        messageEl.innerText = err.message;
-      });
+    // Random delay before redirect (5-8 seconds)
+    setTimeout(() => {
+      window.location.href = data.url;
+    }, 5000 + Math.random() * 3000);
 
   } else {
     if (attempts >= maxAttempts) {
-      deleteToken(token);
-      messageEl.innerText = "❌ Maximum attempts exceeded. Link is now invalid.";
+      messageEl.textContent = "❌ Maximum attempts reached";
       document.getElementById("answer").disabled = true;
+      await fetch(`/api/delete-token?token=${token}`); // Invalidate token
     } else {
-      messageEl.innerText = `❗ Incorrect. You have ${maxAttempts - attempts} attempt(s) left.`;
+      messageEl.textContent = `❗ Incorrect (${maxAttempts - attempts} tries left)`;
+      correctAnswer = generateMathProblem(); // New problem on wrong answer
     }
   }
 }
+
+// Initialize
+document.getElementById("answer").focus();
