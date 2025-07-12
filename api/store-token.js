@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from "uuid";
 
 export default async function handler(req, res) {
@@ -11,7 +10,9 @@ export default async function handler(req, res) {
   const redisUrl = process.env.UPSTASH_REDIS_URL;
   const redisToken = process.env.UPSTASH_REDIS_TOKEN;
 
-  const targetUrl = `${redisUrl}/setex/${token}/300/${encodeURIComponent(url)}`;
+  // 🛠️ Do NOT encodeURIComponent here
+  const targetUrl = `${redisUrl}/setex/${token}/300/${url}`;
+
   try {
     const response = await fetch(targetUrl, {
       method: 'POST',
