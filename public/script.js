@@ -1,92 +1,113 @@
 let attempts = 0;
 const maxAttempts = 3;
-let correctAnswer = generateMathProblem();
 
-// Generate new math problem and draw canvas
-function generateMathProblem() {
-  const a = Math.floor(Math.random() * 10) + 1;
-  const b = Math.floor(Math.random() * 10) + 1;
-  drawQuizCanvas(a, b);
-  return a + b;
-}
+// Generate quiz numbers
+const a = Math.floor(Math.random() * 10) + 1;
+const b = Math.floor(Math.random() * 10) + 1;
+const correctAnswer = a + b;
 
-function drawQuizCanvas(a, b) {
+console.log(`[script.js] Quiz generated: ${a} + ${b} = ${correctAnswer}`);
+
+// Draw the quiz on canvas
+function drawQuizCanvas() {
   const canvas = document.getElementById("quizCanvas");
   const ctx = canvas.getContext("2d");
 
-  // Dynamic background
-  ctx.fillStyle = `hsl(${Math.random() * 360}, 70%, 90%)`;
+  const bgColor = `hsl(${Math.floor(Math.random() * 360)}, 60%, 85%)`;
+  ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Draw problem
+  // Add noise
+  for (let i = 0; i < 80; i++) {
+    ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.2})`;
+    ctx.beginPath();
+    ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Render math question
   ctx.font = "bold 36px Arial";
-  ctx.fillStyle = "#333";
-  ctx.textAlign = "center";
-  ctx.fillText(`${a} + ${b} = ?`, canvas.width/2, 50);
+  ctx.fillStyle = "black";
+  const question = `${a} + ${b}`;
+  ctx.fillText(question, 90, 55);
 }
 
-async function getTokenFromURL() {
+drawQuizCanvas();
+
+// Extract token from query string
+function getTokenFromURL() {
   const params = new URLSearchParams(window.location.search);
-  return params.get("token");
+  const token = params.get("token");
+  console.log(`[script.js] Token from URL: ${token}`);
+  return token;
 }
 
-async function validateToken(token) {
+// Optionally delete token on failure
+async function deleteToken(token) {
   try {
-    const response = await fetch(`/api/get-url?token=${token}`);
-    if (!response.ok) {
-      throw new Error(await response.text());
-    }
-    return await response.json();
+    console.log(`[script.js] Deleting token: ${token}`);
+    await fetch(`/api/delete-token?token=${token}`);
   } catch (err) {
-    console.error("Token validation failed:", err);
-    return null;
+    console.error("[script.js] Token deletion failed:", err);
   }
 }
 
-async function checkAnswer() {
+// Handle quiz form submit
+function checkAnswer() {
   const userAnswer = parseInt(document.getElementById("answer").value);
   const messageEl = document.getElementById("message");
-  const token = await getTokenFromURL();
+  const token = getTokenFromURL();
 
   if (!token) {
-    messageEl.textContent = "❌ Missing verification token";
+    messageEl.innerText = "Missing token.";
     return;
   }
 
   if (isNaN(userAnswer)) {
-    messageEl.textContent = "❗ Please enter a valid number";
+    messageEl.innerText = "Please enter a valid number.";
     return;
   }
 
   attempts++;
 
   if (userAnswer === correctAnswer) {
-    const data = await validateToken(token);
-    if (!data?.url) {
-      messageEl.textContent = "❌ Token expired or invalid";
-      return;
-    }
+    console.log("[script.js] Correct answer!");
 
-    // Success - show redirect animation
-    document.getElementById("quiz-box").style.display = "none";
-    document.getElementById("redirecting").style.display = "flex";
+    fetch(`/api/get-url?token=${token}`)
+      .then(res => {
+        console.log(`[script.js] /api/get-url status: ${res.status}`);
+        if (!res.ok) throw new Error("Token expired or invalid.");
+        return res.json();
+      })
+      .then(data => {
+        const url = data.url;
+        console.log(`[script.js] URL received: ${url}`);
 
-    // Random delay before redirect (5-8 seconds)
-    setTimeout(() => {
-      window.location.href = data.url;
-    }, 5000 + Math.random() * 3000);
+        const delay = Math.floor(Math.random() * 5) + 5;
+        console.log(`[script.js] Redirecting in ${delay} seconds...`);
+
+        document.getElementById("quiz-box").style.display = "none";
+        document.getElementById("redirecting").style.display = "flex";
+
+        setTimeout(() => {
+          console.log("[script.js] Redirecting now...");
+          window.location.href = url;
+        }, delay * 1000);
+      })
+      .catch(err => {
+        console.error("[script.js] Redirect fetch failed:", err.message);
+        messageEl.style.color = "red";
+        messageEl.innerText = err.message;
+      });
 
   } else {
+    console.warn(`[script.js] Incorrect answer: ${userAnswer}`);
     if (attempts >= maxAttempts) {
-      messageEl.textContent = "❌ Maximum attempts reached";
+      deleteToken(token);
+      messageEl.innerText = "❌ Maximum attempts exceeded. Link is now invalid.";
       document.getElementById("answer").disabled = true;
-      await fetch(`/api/delete-token?token=${token}`); // Invalidate token
     } else {
-      messageEl.textContent = `❗ Incorrect (${maxAttempts - attempts} tries left)`;
-      correctAnswer = generateMathProblem(); // New problem on wrong answer
+      messageEl.innerText = `❗ Incorrect. You have ${maxAttempts - attempts} attempt(s) left.`;
     }
   }
 }
-
-// Initialize
-document.getElementById("answer").focus();
