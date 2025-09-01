@@ -52,17 +52,33 @@ async function deleteToken(token) {
   }
 }
 
+// Disable quiz and show failure message
+function disableQuiz(message) {
+  const messageEl = document.getElementById("message");
+  const inputEl = document.getElementById("answer");
+  const buttonEl = document.getElementById("verifyButton");
+
+  // Disable input field and button
+  inputEl.disabled = true;
+  buttonEl.disabled = true;
+
+  // Display the failure message
+  messageEl.innerText = message;
+}
+
 // Handle quiz form submit
 function checkAnswer() {
   const userAnswer = parseInt(document.getElementById("answer").value);
   const messageEl = document.getElementById("message");
   const token = getTokenFromURL();
 
+  // Error handling: Token check
   if (!token) {
     messageEl.innerText = "Missing token.";
     return;
   }
 
+  // Error handling: Invalid answer
   if (isNaN(userAnswer)) {
     messageEl.innerText = "Please enter a valid number.";
     return;
@@ -70,6 +86,7 @@ function checkAnswer() {
 
   attempts++;
 
+  // Check answer correctness
   if (userAnswer === correctAnswer) {
     console.log("[script.js] Correct answer!");
 
@@ -102,10 +119,11 @@ function checkAnswer() {
 
   } else {
     console.warn(`[script.js] Incorrect answer: ${userAnswer}`);
+
+    // If max attempts exceeded, delete the token and disable quiz
     if (attempts >= maxAttempts) {
-      deleteToken(token);
-      messageEl.innerText = "❌ Maximum attempts exceeded. Link is now invalid.";
-      document.getElementById("answer").disabled = true;
+      deleteToken(token);  // Invalidate the token
+      disableQuiz("❌ Maximum attempts exceeded. The link is now invalid.");  // Disable quiz interaction
     } else {
       messageEl.innerText = `❗ Incorrect. You have ${maxAttempts - attempts} attempt(s) left.`;
     }
