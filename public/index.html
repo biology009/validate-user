@@ -65,6 +65,18 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    .message {
+      margin-top: 10px;
+      color: red;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #verifyButton:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -76,14 +88,17 @@
 
   <!-- Quiz interaction box -->
   <div class="box" id="quiz-box">
-    <h2>Enter Your Answer Below</h2>
-    <input type="text" id="answer" placeholder="Your answer">
-    <br>
-    <button onclick="checkAnswer()">Verify</button>
-    <p id="message" style="color:red; margin-top: 10px;"></p>
+    <h2>Solve the question below</h2>
+    <div>
+      <input type="text" id="answer" placeholder="Your answer" />
+    </div>
+    <div>
+      <button id="verifyButton" onclick="checkAnswer()">Verify</button>
+    </div>
+    <p id="message" class="message"></p>
   </div>
 
-  <!-- Redirect animation -->
+  <!-- Redirecting animation -->
   <div id="redirecting">
     <div class="spinner"></div>
     <p style="margin-top: 15px; color: green; font-weight: bold;">Redirecting...</p>
