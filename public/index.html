@@ -2,108 +2,229 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Verify You're Human</title>
+
   <style>
+    :root {
+      --bg-main: #0f172a;
+      --bg-card: #1e293b;
+      --bg-header: #111827;
+      --border: #334155;
+      --primary: #22c55e;
+      --primary-dark: #16a34a;
+      --danger: #ef4444;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: sans-serif;
       margin: 0;
-      padding: 0;
-      background: #f9f9f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: var(--bg-header);
+      padding: 18px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Main wrapper */
+    .main {
+      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
+      padding: 20px;
     }
 
     .banner {
       width: 100%;
-      height: 160px;
+      max-width: 400px;
       display: flex;
-      align-items: center;
       justify-content: center;
-      background: #e6e6e6;
+      margin-bottom: 20px;
     }
 
     canvas {
-      border: 2px solid #ccc;
-      border-radius: 8px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: #0b1220;
     }
 
     .box {
-      margin-top: 30px;
-      border: 1px solid #ccc;
-      padding: 20px 30px;
-      background: #fff;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+      padding: 25px;
+      background: var(--bg-card);
+      border-radius: 14px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .box h2 {
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0b1220;
+      color: var(--text-main);
+      font-size: 15px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+    }
+
+    button {
+      width: 100%;
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      font-size: 15px;
+      background: var(--primary);
+      color: #000;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--primary-dark);
+    }
+
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+
+    .message {
+      margin-top: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--danger);
+      min-height: 20px;
+    }
+
+    /* reCAPTCHA placeholder */
+    .recaptcha-box {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 20px;
+      padding: 15px;
+      background: #0b1220;
+      border: 1px dashed var(--border);
       border-radius: 12px;
       text-align: center;
-    }
-
-    input, button {
-      margin-top: 10px;
-      padding: 8px 12px;
-      font-size: 16px;
-    }
-
-    .spinner {
-      width: 60px;
-      height: 60px;
-      border: 6px solid #28a745;
-      border-top: 6px solid transparent;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+      color: var(--text-muted);
+      font-size: 14px;
     }
 
     #redirecting {
-      margin-top: 40px;
+      margin-top: 30px;
       display: none;
       flex-direction: column;
       align-items: center;
     }
 
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 6px solid var(--primary);
+      border-top: 6px solid transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    #redirecting p {
+      margin-top: 12px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    /* Footer */
+    .footer {
+      background: var(--bg-header);
+      padding: 15px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+    }
+
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .message {
-      margin-top: 10px;
-      color: red;
-      font-size: 16px;
-      font-weight: bold;
-    }
-
-    #verifyButton:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
+
 <body>
 
-  <!-- Canvas banner with quiz -->
-  <div class="banner">
-    <canvas id="quizCanvas" width="280" height="80"></canvas>
+  <!-- Header -->
+  <div class="header">
+    Secure Human Verification System
   </div>
 
-  <!-- Quiz interaction box -->
-  <div class="box" id="quiz-box">
-    <h2>Solve the question below</h2>
-    <div>
-      <input type="text" id="answer" placeholder="Your answer" />
+  <div class="main">
+
+    <div class="banner">
+      <canvas id="quizCanvas" width="280" height="80"></canvas>
     </div>
-    <div>
-      <button id="verifyButton" onclick="checkAnswer()">Verify</button>
+
+    <div class="box" id="quiz-box">
+      <h2>Solve the question below</h2>
+
+      <input 
+        type="text" 
+        id="answer" 
+        placeholder="Your answer"
+        autocomplete="off"
+      />
+
+      <button id="verifyButton" onclick="checkAnswer()">
+        Verify
+      </button>
+
+      <p id="message" class="message"></p>
     </div>
-    <p id="message" class="message"></p>
+
+    <!-- Future reCAPTCHA v3 container -->
+    <div class="recaptcha-box">
+      Google reCAPTCHA v3 integration will be enabled here.
+    </div>
+
+    <div id="redirecting">
+      <div class="spinner"></div>
+      <p>Redirecting...</p>
+    </div>
+
   </div>
 
-  <!-- Redirecting animation -->
-  <div id="redirecting">
-    <div class="spinner"></div>
-    <p style="margin-top: 15px; color: green; font-weight: bold;">Redirecting...</p>
+  <div class="footer">
+    © 2025 Secure Access Portal. All rights reserved.
   </div>
 
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
 </body>
 </html>
