@@ -1,131 +1,74 @@
-let attempts = 0;
-const maxAttempts = 3;
-
-// Generate quiz numbers
-const a = Math.floor(Math.random() * 10) + 1;
-const b = Math.floor(Math.random() * 10) + 1;
-const correctAnswer = a + b;
-
-console.log(`[script.js] Quiz generated: ${a} + ${b} = ${correctAnswer}`);
-
-// Draw the quiz on canvas
-function drawQuizCanvas() {
-  const canvas = document.getElementById("quizCanvas");
-  const ctx = canvas.getContext("2d");
-
-  const bgColor = `hsl(${Math.floor(Math.random() * 360)}, 60%, 85%)`;
-  ctx.fillStyle = bgColor;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Add noise
-  for (let i = 0; i < 80; i++) {
-    ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.2})`;
-    ctx.beginPath();
-    ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 1.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Render math question
-  ctx.font = "bold 36px Arial";
-  ctx.fillStyle = "black";
-  const question = `${a} + ${b}`;
-  ctx.fillText(question, 90, 55);
-}
-
-drawQuizCanvas();
-
-// Extract token from query string
-function getTokenFromURL() {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
-  console.log(`[script.js] Token from URL: ${token}`);
-  return token;
-}
-
-// Optionally delete token on failure
-async function deleteToken(token) {
-  try {
-    console.log(`[script.js] Deleting token: ${token}`);
-    await fetch(`/api/delete-token?token=${token}`);
-  } catch (err) {
-    console.error("[script.js] Token deletion failed:", err);
-  }
-}
-
-// Disable quiz and show failure message
-function disableQuiz(message) {
+(() => {
+  const answerInput = document.getElementById("answer");
   const messageEl = document.getElementById("message");
-  const inputEl = document.getElementById("answer");
-  const buttonEl = document.getElementById("verifyButton");
+  const quizBox = document.getElementById("quiz-box");
+  const redirecting = document.getElementById("redirecting");
 
-  // Disable input field and button
-  inputEl.disabled = true;
-  buttonEl.disabled = true;
+  const token = new URLSearchParams(window.location.search).get("token");
 
-  // Display the failure message
-  messageEl.innerText = message;
-}
+  async function loadQuiz() {
+    const res = await fetch(`/api/get-quiz?token=${token}`);
+    const data = await res.json();
 
-// Handle quiz form submit
-function checkAnswer() {
-  const userAnswer = parseInt(document.getElementById("answer").value);
-  const messageEl = document.getElementById("message");
-  const token = getTokenFromURL();
+    const canvas = document.getElementById("quizCanvas");
+    const ctx = canvas.getContext("2d");
 
-  // Error handling: Token check
-  if (!token) {
-    messageEl.innerText = "Missing token.";
-    return;
+    ctx.fillStyle = "#f0f0f0";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.font = "bold 36px Arial";
+    ctx.fillStyle = "#000";
+    ctx.fillText(data.question, 60, 55);
   }
 
-  // Error handling: Invalid answer
-  if (isNaN(userAnswer)) {
-    messageEl.innerText = "Please enter a valid number.";
-    return;
+  loadQuiz();
+
+  async function executeRecaptcha() {
+    return new Promise((resolve, reject) => {
+      grecaptcha.ready(() => {
+        grecaptcha
+          .execute("6LflfIssAAAAAMdWfm9fyXwJx1kLpLU3S50yx4CH", { action: "verify" })
+          .then(resolve)
+          .catch(reject);
+      });
+    });
   }
 
-  attempts++;
+  window.checkAnswer = async function () {
+    const userAnswer = answerInput.value.trim();
 
-  // Check answer correctness
-  if (userAnswer === correctAnswer) {
-    console.log("[script.js] Correct answer!");
+    try {
+      const recaptchaToken = await executeRecaptcha();
 
-    fetch(`/api/get-url?token=${token}`)
-      .then(res => {
-        console.log(`[script.js] /api/get-url status: ${res.status}`);
-        if (!res.ok) throw new Error("Token expired or invalid.");
-        return res.json();
-      })
-      .then(data => {
-        const url = data.url;
-        console.log(`[script.js] URL received: ${url}`);
-
-        const delay = Math.floor(Math.random() * 5) + 5;
-        console.log(`[script.js] Redirecting in ${delay} seconds...`);
-
-        document.getElementById("quiz-box").style.display = "none";
-        document.getElementById("redirecting").style.display = "flex";
-
-        setTimeout(() => {
-          console.log("[script.js] Redirecting now...");
-          window.location.href = url;
-        }, delay * 1000);
-      })
-      .catch(err => {
-        console.error("[script.js] Redirect fetch failed:", err.message);
-        messageEl.style.color = "red";
-        messageEl.innerText = err.message;
+      const res = await fetch("/api/get-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          answer: userAnswer,
+          recaptcha: recaptchaToken
+        })
       });
 
-  } else {
-    console.warn(`[script.js] Incorrect answer: ${userAnswer}`);
+      const data = await res.json();
 
-    // If max attempts exceeded, delete the token and disable quiz
-    if (attempts >= maxAttempts) {
-      deleteToken(token);  // Invalidate the token
-      disableQuiz("❌ Maximum attempts exceeded. The link is now invalid.");  // Disable quiz interaction
-    } else {
-      messageEl.innerText = `❗ Incorrect. You have ${maxAttempts - attempts} attempt(s) left.`;
+      if (!res.ok) {
+        messageEl.innerText =
+          data.attemptsLeft !== undefined
+            ? `Incorrect. ${data.attemptsLeft} attempt(s) left.`
+            : data.error;
+        return;
+      }
+
+      quizBox.style.display = "none";
+      redirecting.style.display = "flex";
+
+      setTimeout(() => {
+        window.location.href = data.url;
+      }, 4000);
+
+    } catch (err) {
+      messageEl.innerText = "Verification failed.";
     }
-  }
-}
+  };
+})();
