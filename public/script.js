@@ -74,7 +74,7 @@
 
       grecaptcha.ready(() => {
         grecaptcha
-          .execute("YOUR_SITE_KEY_HERE", { action: "verify" })
+          .execute("6Le7j4ssAAAAAI2lh6Ulmr_PXIZfzXG8I2gqT0Di", { action: "verify" })
           .then(token => {
             console.log("[frontend] reCAPTCHA token received");
             resolve(token);
