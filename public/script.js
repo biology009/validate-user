@@ -6,6 +6,8 @@
   const quizBox = document.getElementById("quiz-box");
   const redirecting = document.getElementById("redirecting");
   const canvas = document.getElementById("quizCanvas");
+  canvas.width = 280;
+  canvas.height = 80;
 
   if (!answerInput || !messageEl || !quizBox || !redirecting || !canvas) {
     console.error("[frontend] Required DOM elements missing");
